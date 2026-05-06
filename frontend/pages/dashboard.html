@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Software Vala Inventory</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="logo">📦 Software Vala Inventory</div>
+    <div class="nav-links">
+      <div class="user-info">
+        <span>Welcome, <strong id="userName">User</strong></span>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html" class="active">Dashboard</a></li>
+      <li><a href="products.html">Products</a></li>
+      <li><a href="inventory.html">Inventory</a></li>
+      <li><a href="admin-management.html" id="adminLink" style="display: none;">Admin Management</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <div class="header">
+        <h1>Dashboard</h1>
+      </div>
+
+      <div id="alertContainer"></div>
+
+      <!-- Stats Cards -->
+      <div class="dashboard-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="label">Total Products</div>
+          <div class="value" id="totalProducts">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Stock Value</div>
+          <div class="value" id="totalStockValue">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Low Stock Items</div>
+          <div class="value" id="lowStockItems">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active Users</div>
+          <div class="value" id="activeUsers">0</div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card">
+        <h3>Recent Inventory Transactions</h3>
+        <div class="table-container" id="recentTransactions">
+          <p style="text-align: center; padding: 2rem;">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Low Stock Alert -->
+      <div class="card">
+        <h3>⚠️ Low Stock Items</h3>
+        <div class="table-container" id="lowStockTable">
+          <p style="text-align: center; padding: 2rem;">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeDashboard();
+    });
+
+    async function initializeDashboard() {
+      const user = AuthManager.getUser();
+      document.getElementById('userName').textContent = user?.name || 'User';
+
+      // Show admin management link for superadmin and admin
+      if (AuthManager.canManageUsers()) {
+        document.getElementById('adminLink').style.display = 'block';
+      }
+
+      await loadDashboardData();
+    }
+
+    async function loadDashboardData() {
+      try {
+        // Load products and inventory data
+        const productsResponse = await apiService.getAllProducts();
+        const inventoryResponse = await apiService.getInventoryReport();
+        const usersResponse = await apiService.getAllUsers();
+        const transactionsResponse = await apiService.getAllTransactions();
+
+        if (productsResponse.success) {
+          const products = productsResponse.products;
+          document.getElementById('totalProducts').textContent = products.length;
+
+          const stockValue = products.reduce(
+            (sum, p) => sum + (p.currentStock * p.purchasePrice),
+            0
+          );
+          document.getElementById('totalStockValue').textContent = UIManager.formatCurrency(stockValue);
+
+          const lowStock = inventoryResponse.success
+            ? inventoryResponse.report.filter((p) => p.status === 'Low Stock').length
+            : 0;
+          document.getElementById('lowStockItems').textContent = lowStock;
+
+          // Render low stock table
+          if (inventoryResponse.success && inventoryResponse.report.length > 0) {
+            const lowStockItems = inventoryResponse.report.filter((p) => p.status === 'Low Stock');
+            if (lowStockItems.length > 0) {
+              const columns = [
+                { key: 'productName', label: 'Product' },
+                { key: 'productCode', label: 'Code' },
+                { key: 'currentStock', label: 'Current Stock' },
+                { key: 'minStock', label: 'Min Stock' },
+                { key: 'totalValue', label: 'Value' },
+              ];
+              document.getElementById('lowStockTable').innerHTML =
+                UIManager.createTable(lowStockItems, columns);
+            }
+          }
+        }
+
+        if (usersResponse.success) {
+          const activeUsers = usersResponse.users.filter((u) => u.status === 'active').length;
+          document.getElementById('activeUsers').textContent = activeUsers;
+        }
+
+        if (transactionsResponse.success && transactionsResponse.transactions.length > 0) {
+          const recentTransactions = transactionsResponse.transactions
+            .slice(-5)
+            .reverse();
+          const columns = [
+            { key: 'product.productName', label: 'Product' },
+            { key: 'transactionType', label: 'Type' },
+            { key: 'quantity', label: 'Quantity' },
+            { key: 'balanceAfter', label: 'Balance' },
+            { key: 'createdAt', label: 'Date' },
+          ];
+          const tableData = recentTransactions.map((t) => ({
+            ...t,
+            product: t.product,
+            createdAt: UIManager.formatDate(t.createdAt),
+          }));
+          document.getElementById('recentTransactions').innerHTML =
+            UIManager.createTable(tableData, columns);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        UIManager.showAlert('Failed to load dashboard data', 'danger');
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        AuthManager.logout();
+      }
+    }
+  </script>
+</body>
+</html>

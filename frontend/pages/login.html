@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Software Vala - Inventory Management Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <h1>Software Vala</h1>
+      <p class="subtitle">Inventory Management System</p>
+
+      <div id="alertContainer"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+      </form>
+
+      <div class="footer-link">
+        <p>Demo Credentials:</p>
+        <p>Superadmin: admin@vala.com / password123</p>
+        <p>Admin: admin.user@vala.com / password123</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await apiService.login(email, password);
+
+        if (response.success) {
+          apiService.setToken(response.token);
+          AuthManager.setUser(response.user);
+
+          UIManager.showAlert('Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1500);
+        }
+      } catch (error) {
+        UIManager.showAlert(error.message || 'Login failed', 'danger');
+      }
+    });
+  </script>
+</body>
+</html>

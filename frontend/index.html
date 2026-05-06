@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Software Vala - Inventory Management System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .landing-container {
+      background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .landing-container h1 {
+      font-size: 48px;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .landing-container p {
+      font-size: 18px;
+      margin-bottom: 2rem;
+      max-width: 600px;
+      opacity: 0.95;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+      max-width: 1200px;
+    }
+
+    .feature-card {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 1rem;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-large {
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .btn-white {
+      background-color: var(--white);
+      color: var(--primary-blue);
+    }
+
+    .btn-white:hover {
+      background-color: var(--light-gray);
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-container">
+    <h1>📦 Software Vala Inventory</h1>
+    <p>A comprehensive inventory management system with superadmin control, admin access, and real-time stock tracking</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>👥 Role-Based Access</h3>
+        <p>Superadmin, Admin, and Staff roles with different permission levels</p>
+      </div>
+      <div class="feature-card">
+        <h3>📊 Real-time Dashboard</h3>
+        <p>Monitor inventory levels, stock values, and key metrics in real-time</p>
+      </div>
+      <div class="feature-card">
+        <h3>🏭 Product Management</h3>
+        <p>Manage products, categories, suppliers, and pricing</p>
+      </div>
+      <div class="feature-card">
+        <h3>📦 Stock Tracking</h3>
+        <p>Track stock movements, low inventory alerts, and detailed reports</p>
+      </div>
+      <div class="feature-card">
+        <h3>👨‍💼 Admin Control</h3>
+        <p>Superadmins can create and manage admin accounts</p>
+      </div>
+      <div class="feature-card">
+        <h3>📱 Responsive Design</h3>
+        <p>Works seamlessly on desktop, tablet, and mobile devices</p>
+      </div>
+    </div>
+
+    <div class="cta-buttons">
+      <button class="btn btn-large" onclick="window.location.href='pages/login.html'">Go to Login</button>
+      <button class="btn btn-white btn-large" onclick="document.getElementById('info').scrollIntoView()">Learn More</button>
+    </div>
+  </div>
+
+  <div class="main-content" id="info">
+    <div class="container">
+      <h2 style="text-align: center; color: var(--dark-blue); margin-top: 3rem; margin-bottom: 2rem;">Getting Started</h2>
+
+      <div class="card">
+        <h3>Demo Credentials</h3>
+        <p><strong>Superadmin Account:</strong></p>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+          <li>Email: admin@vala.com</li>
+          <li>Password: password123</li>
+        </ul>
+
+        <p><strong>Admin Account:</strong></p>
+        <ul style="margin-left: 1.5rem;">
+          <li>Email: admin.user@vala.com</li>
+          <li>Password: password123</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Features</h3>
+        <ul style="margin-left: 1.5rem;">
+          <li><strong>Authentication:</strong> Secure login system with JWT tokens</li>
+          <li><strong>Dashboard:</strong> Overview of inventory metrics and transactions</li>
+          <li><strong>Product Management:</strong> Add, edit, delete products with supplier information</li>
+          <li><strong>Inventory Tracking:</strong> Record stock in, out, and adjustments</li>
+          <li><strong>Stock Reports:</strong> Detailed inventory status and valuation</li>
+          <li><strong>Admin Management:</strong> Create and manage admin and staff accounts</li>
+          <li><strong>Role-Based Access:</strong> Different permissions for different roles</li>
+          <li><strong>Responsive UI:</strong> Blue and white professional design</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Redirect to login if already has token
+    if (localStorage.getItem('token')) {
+      window.location.href = 'pages/dashboard.html';
+    }
+  </script>
+</body>
+</html>

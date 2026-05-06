@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory - Software Vala Inventory</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="logo">📦 Software Vala Inventory</div>
+    <div class="nav-links">
+      <div class="user-info">
+        <span>Welcome, <strong id="userName">User</strong></span>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="products.html">Products</a></li>
+      <li><a href="inventory.html" class="active">Inventory</a></li>
+      <li><a href="admin-management.html" id="adminLink" style="display: none;">Admin Management</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <div class="header">
+        <h1>Inventory Management</h1>
+        <button class="btn" onclick="openTransactionModal()" id="addTransactionBtn" style="display: none;">+ Record Transaction</button>
+      </div>
+
+      <div id="alertContainer"></div>
+
+      <!-- Tabs -->
+      <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+        <button class="btn" onclick="switchTab('transactions')" id="tab-transactions">Transactions</button>
+        <button class="btn-secondary" onclick="switchTab('report')" id="tab-report">Stock Report</button>
+      </div>
+
+      <!-- Transactions Tab -->
+      <div id="transactions-tab" class="card">
+        <h3>Inventory Transactions</h3>
+        <div class="table-container" id="transactionsTable">
+          <p style="text-align: center; padding: 2rem;">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Report Tab -->
+      <div id="report-tab" class="card" style="display: none;">
+        <h3>Stock Report</h3>
+        <div class="table-container" id="reportTable">
+          <p style="text-align: center; padding: 2rem;">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Modal -->
+  <div id="transactionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Record Inventory Transaction</h2>
+        <button class="close-btn" onclick="UIManager.hideModal('transactionModal')">&times;</button>
+      </div>
+
+      <form id="transactionForm">
+        <div class="form-group">
+          <label for="product">Select Product *</label>
+          <select id="product" name="product" required>
+            <option value="">-- Select Product --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="transactionType">Transaction Type *</label>
+          <select id="transactionType" name="transactionType" required>
+            <option value="in">Stock In</option>
+            <option value="out">Stock Out</option>
+            <option value="adjustment">Adjustment</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">Quantity *</label>
+          <input type="number" id="quantity" name="quantity" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reference">Reference/Document No.</label>
+          <input type="text" id="reference" name="reference" placeholder="e.g., PO-001, INV-001">
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" rows="3"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="UIManager.hideModal('transactionModal')">Cancel</button>
+          <button type="submit" class="btn">Record Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = AuthManager.getUser();
+      document.getElementById('userName').textContent = user?.name || 'User';
+
+      // Show admin management link
+      if (AuthManager.canManageUsers()) {
+        document.getElementById('adminLink').style.display = 'block';
+        document.getElementById('addTransactionBtn').style.display = 'block';
+      }
+
+      await loadInventoryData();
+    });
+
+    async function loadInventoryData() {
+      try {
+        const productsResponse = await apiService.getAllProducts();
+
+        // Populate product dropdown
+        if (productsResponse.success) {
+          const productSelect = document.getElementById('product');
+          productsResponse.products.forEach((product) => {
+            const option = document.createElement('option');
+            option.value = product._id;
+            option.textContent = `${product.productName} (${product.currentStock} in stock)`;
+            productSelect.appendChild(option);
+          });
+        }
+
+        await loadTransactions();
+        await loadReport();
+      } catch (error) {
+        UIManager.showAlert('Failed to load inventory data', 'danger');
+      }
+    }
+
+    async function loadTransactions() {
+      UIManager.showLoading('transactionsTable');
+      try {
+        const response = await apiService.getAllTransactions();
+
+        if (response.success && response.transactions.length > 0) {
+          const columns = [
+            { key: 'product.productName', label: 'Product' },
+            { key: 'transactionType', label: 'Type' },
+            { key: 'quantity', label: 'Quantity' },
+            { key: 'balanceBefore', label: 'Before' },
+            { key: 'balanceAfter', label: 'After' },
+            { key: 'reference', label: 'Reference' },
+            { key: 'createdAt', label: 'Date' },
+          ];
+
+          const tableData = response.transactions.map((t) => ({
+            ...t,
+            createdAt: UIManager.formatDate(t.createdAt),
+          }));
+
+          document.getElementById('transactionsTable').innerHTML = UIManager.createTable(tableData, columns);
+        } else {
+          document.getElementById('transactionsTable').innerHTML =
+            '<p style="text-align: center; padding: 2rem;">No transactions found</p>';
+        }
+      } catch (error) {
+        UIManager.showAlert('Failed to load transactions', 'danger');
+      }
+    }
+
+    async function loadReport() {
+      UIManager.showLoading('reportTable');
+      try {
+        const response = await apiService.getInventoryReport();
+
+        if (response.success && response.report.length > 0) {
+          const columns = [
+            { key: 'productName', label: 'Product' },
+            { key: 'productCode', label: 'Code' },
+            { key: 'currentStock', label: 'Current Stock' },
+            { key: 'minStock', label: 'Min Stock' },
+            { key: 'status', label: 'Status' },
+            { key: 'purchasePrice', label: 'Purchase Price' },
+            { key: 'totalValue', label: 'Total Value' },
+          ];
+
+          const tableData = response.report.map((item) => ({
+            ...item,
+            purchasePrice: UIManager.formatCurrency(item.purchasePrice),
+            totalValue: UIManager.formatCurrency(item.totalValue),
+          }));
+
+          document.getElementById('reportTable').innerHTML = UIManager.createTable(tableData, columns);
+        } else {
+          document.getElementById('reportTable').innerHTML =
+            '<p style="text-align: center; padding: 2rem;">No inventory data</p>';
+        }
+      } catch (error) {
+        UIManager.showAlert('Failed to load report', 'danger');
+      }
+    }
+
+    function switchTab(tab) {
+      // Hide all tabs
+      document.getElementById('transactions-tab').style.display = 'none';
+      document.getElementById('report-tab').style.display = 'none';
+
+      // Remove active class from buttons
+      document.getElementById('tab-transactions').classList.remove('btn');
+      document.getElementById('tab-transactions').classList.add('btn-secondary');
+      document.getElementById('tab-report').classList.remove('btn');
+      document.getElementById('tab-report').classList.add('btn-secondary');
+
+      // Show selected tab
+      if (tab === 'transactions') {
+        document.getElementById('transactions-tab').style.display = 'block';
+        document.getElementById('tab-transactions').classList.remove('btn-secondary');
+        document.getElementById('tab-transactions').classList.add('btn');
+      } else if (tab === 'report') {
+        document.getElementById('report-tab').style.display = 'block';
+        document.getElementById('tab-report').classList.remove('btn-secondary');
+        document.getElementById('tab-report').classList.add('btn');
+      }
+    }
+
+    function openTransactionModal() {
+      UIManager.clearForm('transactionForm');
+      UIManager.showModal('transactionModal');
+    }
+
+    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = UIManager.getFormData('transactionForm');
+
+      const transactionData = {
+        productId: formData.product,
+        transactionType: formData.transactionType,
+        quantity: parseInt(formData.quantity),
+        reference: formData.reference,
+        notes: formData.notes,
+      };
+
+      try {
+        const response = await apiService.recordTransaction(transactionData);
+
+        if (response.success) {
+          UIManager.showAlert('Transaction recorded successfully', 'success');
+          UIManager.hideModal('transactionModal');
+          await loadInventoryData();
+        }
+      } catch (error) {
+        UIManager.showAlert(error.message || 'Failed to record transaction', 'danger');
+      }
+    });
+
+    function handleLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        AuthManager.logout();
+      }
+    }
+  </script>
+</body>
+</html>
